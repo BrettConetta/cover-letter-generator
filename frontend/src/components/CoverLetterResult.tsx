@@ -5,7 +5,9 @@ type CoverLetterResultProps = {
   onCopy: () => void;
   copyStatus: "idle" | "copied" | "error";
   onDownloadDocx: () => void;
-  downloadStatus: DownloadStatus;
+  docxDownloadStatus: DownloadStatus;
+  onDownloadPdf: () => void;
+  pdfDownloadStatus: DownloadStatus;
   hasCompleteApplicant: boolean;
 };
 
@@ -14,21 +16,38 @@ export function CoverLetterResult({
   onCopy,
   copyStatus,
   onDownloadDocx,
-  downloadStatus,
+  docxDownloadStatus,
+  onDownloadPdf,
+  pdfDownloadStatus,
   hasCompleteApplicant,
 }: CoverLetterResultProps) {
+  const isDownloading =
+    docxDownloadStatus === "downloading" || pdfDownloadStatus === "downloading";
+
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium text-gray-900">Generated Cover Letter</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <button
             type="button"
             onClick={onDownloadDocx}
-            disabled={downloadStatus === "downloading"}
+            disabled={isDownloading}
             className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {downloadStatus === "downloading" ? "Downloading..." : "Download .docx"}
+            {docxDownloadStatus === "downloading"
+              ? "Downloading..."
+              : "Download .docx"}
+          </button>
+          <button
+            type="button"
+            onClick={onDownloadPdf}
+            disabled={isDownloading}
+            className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {pdfDownloadStatus === "downloading"
+              ? "Downloading..."
+              : "Download PDF"}
           </button>
           <button
             type="button"
@@ -53,9 +72,15 @@ export function CoverLetterResult({
         </p>
       )}
 
-      {downloadStatus === "error" && (
+      {docxDownloadStatus === "error" && (
         <p className="text-sm text-red-600" role="alert">
           Could not create the Word document. Please try again.
+        </p>
+      )}
+
+      {pdfDownloadStatus === "error" && (
+        <p className="text-sm text-red-600" role="alert">
+          Could not create the PDF. Please try again.
         </p>
       )}
 
