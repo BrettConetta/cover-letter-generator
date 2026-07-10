@@ -11,6 +11,7 @@ export type GenerateCoverLetterRequest = z.infer<
 
 export const CoverLetterResponseSchema = z.object({
   coverLetter: z.string().min(1),
+  companyName: z.string(),
 });
 
 export type CoverLetterResponse = z.infer<typeof CoverLetterResponseSchema>;

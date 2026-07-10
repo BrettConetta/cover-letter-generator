@@ -10,6 +10,10 @@ import {
   readStoredResume,
   writeStoredResume,
 } from "../../lib/services/resumeStorageService.js";
+import {
+  extractAndStoreApplicant,
+  readStoredApplicant,
+} from "../../lib/services/applicantStorageService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(
@@ -19,6 +23,10 @@ const PROJECT_ROOT = path.resolve(
 dotenv.config({ path: path.resolve(PROJECT_ROOT, ".env") });
 
 const SaveResumeRequestSchema = z.object({
+  text: z.string().min(1, "Resume text is required"),
+});
+
+const ExtractApplicantRequestSchema = z.object({
   text: z.string().min(1, "Resume text is required"),
 });
 
@@ -66,6 +74,37 @@ app.delete("/api/resume", async (_req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to clear stored resume:", error);
     return res.status(500).json({ error: "Failed to clear stored resume" });
+  }
+});
+
+app.get("/api/applicant", async (_req: Request, res: Response) => {
+  try {
+    const applicant = await readStoredApplicant(PROJECT_ROOT);
+    return res.json({ applicant });
+  } catch (error) {
+    console.error("Failed to read applicant info:", error);
+    return res.status(500).json({ error: "Failed to read applicant info" });
+  }
+});
+
+app.put("/api/applicant/extract", async (req: Request, res: Response) => {
+  try {
+    const parsed = ExtractApplicantRequestSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const message = parsed.error.issues
+        .map((issue) => issue.message)
+        .join("; ");
+      return res.status(400).json({ error: message });
+    }
+
+    const applicant = await extractAndStoreApplicant(
+      PROJECT_ROOT,
+      parsed.data.text
+    );
+    return res.json({ applicant });
+  } catch (error) {
+    console.error("Failed to extract applicant info:", error);
+    return res.status(500).json({ error: "Failed to extract applicant info" });
   }
 });
 
