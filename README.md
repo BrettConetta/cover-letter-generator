@@ -44,9 +44,27 @@ ANTHROPIC_MODEL=claude-sonnet-4-6
 
 ### Start everything
 
+From the project directory:
+
 ```bash
 npm run dev
 ```
+
+### Global command (optional)
+
+Run this once from the project root to register a global command:
+
+```bash
+npm link
+```
+
+Then start the app from any directory:
+
+```bash
+cover-letter-generator
+```
+
+To remove the global command later, run `npm unlink -g cover-letter-generator` from the project root.
 
 This starts:
 
