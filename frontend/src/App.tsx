@@ -7,6 +7,11 @@ import {
   buildCoverLetterFilename,
   downloadCoverLetterDocx,
 } from "./utils/buildCoverLetterDocx";
+import {
+  buildCoverLetterPdf,
+  buildCoverLetterPdfFilename,
+  downloadCoverLetterPdf,
+} from "./utils/buildCoverLetterPdf";
 import { generateCoverLetter } from "./api/coverLetter";
 import { CoverLetterResult } from "./components/CoverLetterResult";
 import { JobDescriptionInput } from "./components/JobDescriptionInput";
@@ -19,6 +24,7 @@ function App() {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeSource, setResumeSource] = useState<ResumeSource>("paste");
   const [pastedResume, setPastedResume] = useState("");
+  const [uploadedResume, setUploadedResume] = useState("");
   const [generatedLetter, setGeneratedLetter] =
     useState<CoverLetterResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -26,7 +32,10 @@ function App() {
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
     "idle"
   );
-  const [downloadStatus, setDownloadStatus] = useState<
+  const [docxDownloadStatus, setDocxDownloadStatus] = useState<
+    "idle" | "downloading" | "error"
+  >("idle");
+  const [pdfDownloadStatus, setPdfDownloadStatus] = useState<
     "idle" | "downloading" | "error"
   >("idle");
 
@@ -51,8 +60,11 @@ function App() {
     if (resumeSource === "stored") {
       return storedResume;
     }
+    if (resumeSource === "upload") {
+      return uploadedResume;
+    }
     return pastedResume;
-  }, [resumeSource, storedResume, pastedResume]);
+  }, [resumeSource, storedResume, uploadedResume, pastedResume]);
 
   const formattedCoverLetter = useMemo(() => {
     if (!generatedLetter) {
@@ -72,7 +84,8 @@ function App() {
     setError(null);
     setGeneratedLetter(null);
     setCopyStatus("idle");
-    setDownloadStatus("idle");
+    setDocxDownloadStatus("idle");
+    setPdfDownloadStatus("idle");
 
     if (!jobDescription.trim()) {
       setError("Please paste a job description.");
@@ -83,7 +96,9 @@ function App() {
       setError(
         resumeSource === "stored"
           ? "Save a resume under My Resume first, or switch to Paste/Upload."
-          : "Please provide your resume."
+          : resumeSource === "upload"
+            ? "Please upload a resume file."
+            : "Please provide your resume."
       );
       return;
     }
@@ -93,6 +108,8 @@ function App() {
     try {
       if (resumeSource === "paste") {
         await syncApplicantFromResume(pastedResume);
+      } else if (resumeSource === "upload") {
+        await syncApplicantFromResume(uploadedResume);
       } else {
         await refreshApplicant();
       }
@@ -100,7 +117,9 @@ function App() {
       const resumeText =
         resumeSource === "stored"
           ? storedResume
-          : stripContactInfo(pastedResume);
+          : stripContactInfo(
+              resumeSource === "upload" ? uploadedResume : pastedResume
+            );
 
       const result = await generateCoverLetter({
         jobDescription: jobDescription.trim(),
@@ -122,7 +141,7 @@ function App() {
   async function handleDownloadDocx() {
     if (!generatedLetter) return;
 
-    setDownloadStatus("downloading");
+    setDocxDownloadStatus("downloading");
 
     try {
       const blob = await buildCoverLetterDocx({
@@ -134,9 +153,30 @@ function App() {
         blob,
         buildCoverLetterFilename(generatedLetter.companyName)
       );
-      setDownloadStatus("idle");
+      setDocxDownloadStatus("idle");
     } catch {
-      setDownloadStatus("error");
+      setDocxDownloadStatus("error");
+    }
+  }
+
+  async function handleDownloadPdf() {
+    if (!generatedLetter) return;
+
+    setPdfDownloadStatus("downloading");
+
+    try {
+      const blob = await buildCoverLetterPdf({
+        applicant,
+        body: generatedLetter.coverLetter,
+        companyName: generatedLetter.companyName,
+      });
+      downloadCoverLetterPdf(
+        blob,
+        buildCoverLetterPdfFilename(generatedLetter.companyName)
+      );
+      setPdfDownloadStatus("idle");
+    } catch {
+      setPdfDownloadStatus("error");
     }
   }
 
@@ -199,6 +239,8 @@ function App() {
               onSourceChange={setResumeSource}
               pastedResume={pastedResume}
               onPastedResumeChange={setPastedResume}
+              uploadedResume={uploadedResume}
+              onUploadedResumeChange={setUploadedResume}
               storedResume={storedResume}
               hasStoredResume={hasStoredResume}
               onSaveStoredResume={handleResumeSaved}
@@ -237,7 +279,9 @@ function App() {
                 onCopy={handleCopy}
                 copyStatus={copyStatus}
                 onDownloadDocx={handleDownloadDocx}
-                downloadStatus={downloadStatus}
+                docxDownloadStatus={docxDownloadStatus}
+                onDownloadPdf={handleDownloadPdf}
+                pdfDownloadStatus={pdfDownloadStatus}
                 hasCompleteApplicant={hasCompleteApplicant}
               />
             ) : (
