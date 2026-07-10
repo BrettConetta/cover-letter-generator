@@ -1,8 +1,17 @@
 import { useMemo, useState } from "react";
+import type { CoverLetterResponse } from "../../lib/schemas/coverLetter";
+import { isApplicantComplete } from "../../lib/schemas/applicant";
+import { formatCoverLetterDocument } from "../../lib/utils/formatCoverLetterDocument";
+import {
+  buildCoverLetterDocx,
+  buildCoverLetterFilename,
+  downloadCoverLetterDocx,
+} from "./utils/buildCoverLetterDocx";
 import { generateCoverLetter } from "./api/coverLetter";
 import { CoverLetterResult } from "./components/CoverLetterResult";
 import { JobDescriptionInput } from "./components/JobDescriptionInput";
 import { ResumeInput, type ResumeSource } from "./components/ResumeInput";
+import { useApplicantInfo } from "./hooks/useApplicantInfo";
 import { useStoredResume } from "./hooks/useStoredResume";
 import { stripContactInfo } from "./utils/stripContactInfo";
 
@@ -10,21 +19,33 @@ function App() {
   const [jobDescription, setJobDescription] = useState("");
   const [resumeSource, setResumeSource] = useState<ResumeSource>("paste");
   const [pastedResume, setPastedResume] = useState("");
-  const [coverLetter, setCoverLetter] = useState<string | null>(null);
+  const [generatedLetter, setGeneratedLetter] =
+    useState<CoverLetterResponse | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
     "idle"
   );
+  const [downloadStatus, setDownloadStatus] = useState<
+    "idle" | "downloading" | "error"
+  >("idle");
 
   const {
     storedResume,
     hasStoredResume,
-    isLoaded,
-    loadError,
+    isLoaded: isResumeLoaded,
+    loadError: resumeLoadError,
     saveResume,
     clearResume,
   } = useStoredResume();
+
+  const {
+    applicant,
+    isLoaded: isApplicantLoaded,
+    loadError: applicantLoadError,
+    refreshApplicant,
+    syncApplicantFromResume,
+  } = useApplicantInfo();
 
   const activeResumeText = useMemo(() => {
     if (resumeSource === "stored") {
@@ -33,10 +54,25 @@ function App() {
     return pastedResume;
   }, [resumeSource, storedResume, pastedResume]);
 
+  const formattedCoverLetter = useMemo(() => {
+    if (!generatedLetter) {
+      return null;
+    }
+
+    return formatCoverLetterDocument({
+      applicant,
+      body: generatedLetter.coverLetter,
+      companyName: generatedLetter.companyName,
+    });
+  }, [applicant, generatedLetter]);
+
+  const hasCompleteApplicant = isApplicantComplete(applicant);
+
   async function handleGenerate() {
     setError(null);
-    setCoverLetter(null);
+    setGeneratedLetter(null);
     setCopyStatus("idle");
+    setDownloadStatus("idle");
 
     if (!jobDescription.trim()) {
       setError("Please paste a job description.");
@@ -55,6 +91,12 @@ function App() {
     setIsGenerating(true);
 
     try {
+      if (resumeSource === "paste") {
+        await syncApplicantFromResume(pastedResume);
+      } else {
+        await refreshApplicant();
+      }
+
       const resumeText =
         resumeSource === "stored"
           ? storedResume
@@ -65,7 +107,7 @@ function App() {
         resumeText,
       });
 
-      setCoverLetter(result.coverLetter);
+      setGeneratedLetter(result);
     } catch (generateError) {
       setError(
         generateError instanceof Error
@@ -77,11 +119,32 @@ function App() {
     }
   }
 
-  async function handleCopy() {
-    if (!coverLetter) return;
+  async function handleDownloadDocx() {
+    if (!generatedLetter) return;
+
+    setDownloadStatus("downloading");
 
     try {
-      await navigator.clipboard.writeText(coverLetter);
+      const blob = await buildCoverLetterDocx({
+        applicant,
+        body: generatedLetter.coverLetter,
+        companyName: generatedLetter.companyName,
+      });
+      downloadCoverLetterDocx(
+        blob,
+        buildCoverLetterFilename(generatedLetter.companyName)
+      );
+      setDownloadStatus("idle");
+    } catch {
+      setDownloadStatus("error");
+    }
+  }
+
+  async function handleCopy() {
+    if (!formattedCoverLetter) return;
+
+    try {
+      await navigator.clipboard.writeText(formattedCoverLetter);
       setCopyStatus("copied");
       window.setTimeout(() => setCopyStatus("idle"), 2000);
     } catch {
@@ -89,7 +152,18 @@ function App() {
     }
   }
 
-  if (!isLoaded) {
+  async function handleResumeSaved(rawText: string) {
+    const sanitized = await saveResume(rawText);
+    await refreshApplicant();
+    return sanitized;
+  }
+
+  async function handleResumeCleared() {
+    await clearResume();
+    await refreshApplicant();
+  }
+
+  if (!isResumeLoaded || !isApplicantLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 text-sm text-gray-600">
         Loading...
@@ -127,14 +201,14 @@ function App() {
               onPastedResumeChange={setPastedResume}
               storedResume={storedResume}
               hasStoredResume={hasStoredResume}
-              onSaveStoredResume={saveResume}
-              onClearStoredResume={clearResume}
+              onSaveStoredResume={handleResumeSaved}
+              onClearStoredResume={handleResumeCleared}
               disabled={isGenerating}
             />
 
-            {loadError && (
+            {(resumeLoadError || applicantLoadError) && (
               <p className="text-sm text-red-600" role="alert">
-                {loadError}
+                {resumeLoadError ?? applicantLoadError}
               </p>
             )}
 
@@ -157,11 +231,14 @@ function App() {
           </div>
 
           <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            {coverLetter ? (
+            {formattedCoverLetter ? (
               <CoverLetterResult
-                coverLetter={coverLetter}
+                coverLetter={formattedCoverLetter}
                 onCopy={handleCopy}
                 copyStatus={copyStatus}
+                onDownloadDocx={handleDownloadDocx}
+                downloadStatus={downloadStatus}
+                hasCompleteApplicant={hasCompleteApplicant}
               />
             ) : (
               <div className="flex h-full min-h-80 items-center justify-center text-center">

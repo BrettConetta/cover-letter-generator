@@ -1,22 +1,13 @@
 import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
-
-const EMAIL_PATTERN =
-  /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-
-const PHONE_PATTERN =
-  /(?:\+?\d{1,3}[-.\s\u2013\u2014]*)?(?:\(?\d{3}\)?[-.\s\u2013\u2014]*){1,2}\d{4}/g;
-
-const URL_PATTERN = /https?:\/\/\S+/gi;
-
-const LINKEDIN_PATTERN = /(?:https?:\/\/)?(?:www\.)?linkedin\.com\/\S+/gi;
-
-const GITHUB_PATTERN =
-  /(?:https?:\/\/)?(?:www\.)?github\.com\/[A-Za-z0-9_-]+\/?/gi;
-
-const PORTFOLIO_PATTERN =
-  /(?:https?:\/\/)?(?:www\.)?brettconetta\.dev\/?/gi;
-
-const HEADER_LINE_COUNT = 3;
+import {
+  EMAIL_PATTERN,
+  GITHUB_PATTERN,
+  LINKEDIN_PATTERN,
+  PHONE_PATTERN,
+  PORTFOLIO_PATTERN,
+  URL_PATTERN,
+} from "./contactPatterns.js";
+import { getResumeHeaderLines } from "./resumeHeader.js";
 
 const SECTION_HEADER_LINE =
   /^(?:Summary|Experience|Education|Skills|Projects|Work Experience|Technical Skills|Professional Summary)\s*$/i;
@@ -45,7 +36,6 @@ function stripCollapsedResumeHeader(text: string): string {
     return text.slice(match.index).trimStart();
   }
 
-  // No recognizable section start — keep text and rely on inline pattern removal.
   return text;
 }
 
@@ -54,10 +44,16 @@ function stripResumeHeader(text: string): string {
     return stripCollapsedResumeHeader(text);
   }
 
+  const headerLines = getResumeHeaderLines(text);
+  if (headerLines.length === 0) {
+    return text;
+  }
+
+  const headerLineSet = new Set(headerLines);
   const lines = text.split("\n");
   const result: string[] = [];
-  let removed = 0;
   let skippingLeadingBlanks = true;
+  let inHeader = true;
 
   for (const line of lines) {
     const trimmed = line.trim();
@@ -67,18 +63,25 @@ function stripResumeHeader(text: string): string {
     }
     skippingLeadingBlanks = false;
 
-    if (removed < HEADER_LINE_COUNT && trimmed) {
-      if (isSectionHeaderLine(trimmed)) {
-        result.push(line);
-        removed = HEADER_LINE_COUNT;
+    if (inHeader) {
+      if (trimmed && headerLineSet.has(trimmed)) {
         continue;
       }
 
-      removed++;
-      continue;
+      if (isSectionHeaderLine(trimmed)) {
+        inHeader = false;
+        result.push(line);
+        continue;
+      }
+
+      if (trimmed) {
+        inHeader = false;
+      }
     }
 
-    result.push(line);
+    if (!inHeader) {
+      result.push(line);
+    }
   }
 
   return result.join("\n");

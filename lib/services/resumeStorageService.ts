@@ -1,5 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  clearStoredApplicant,
+  extractAndStoreApplicant,
+} from "./applicantStorageService.js";
 import { stripContactInfo } from "../utils/stripContactInfo.js";
 
 export function getResumeFilePath(projectRoot: string): string {
@@ -21,6 +25,7 @@ export async function writeStoredResume(
   projectRoot: string,
   rawText: string
 ): Promise<string> {
+  await extractAndStoreApplicant(projectRoot, rawText);
   const sanitized = stripContactInfo(rawText);
   const filePath = getResumeFilePath(projectRoot);
   await fs.mkdir(path.dirname(filePath), { recursive: true });
@@ -37,4 +42,6 @@ export async function clearStoredResume(projectRoot: string): Promise<void> {
     }
     throw error;
   }
+
+  await clearStoredApplicant(projectRoot);
 }
