@@ -18,7 +18,7 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(
   __dirname,
-  __dirname.includes(`${path.sep}dist${path.sep}`) ? "../../../.." : "../.."
+  __dirname.includes(`${path.sep}dist${path.sep}`) ? "../../../.." : "../..",
 );
 dotenv.config({ path: path.resolve(PROJECT_ROOT, ".env") });
 
@@ -39,9 +39,9 @@ app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ status: "ok" });
 });
 
-app.get("/api/resume", async (_req: Request, res: Response) => {
+app.get("/api/resume", (_req: Request, res: Response) => {
   try {
-    const text = await readStoredResume(PROJECT_ROOT);
+    const text = readStoredResume(PROJECT_ROOT);
     return res.json({ text });
   } catch (error) {
     console.error("Failed to read stored resume:", error);
@@ -49,7 +49,7 @@ app.get("/api/resume", async (_req: Request, res: Response) => {
   }
 });
 
-app.put("/api/resume", async (req: Request, res: Response) => {
+app.put("/api/resume", (req: Request, res: Response) => {
   try {
     const parsed = SaveResumeRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -59,7 +59,7 @@ app.put("/api/resume", async (req: Request, res: Response) => {
       return res.status(400).json({ error: message });
     }
 
-    const text = await writeStoredResume(PROJECT_ROOT, parsed.data.text);
+    const text = writeStoredResume(PROJECT_ROOT, parsed.data.text);
     return res.json({ text });
   } catch (error) {
     console.error("Failed to save resume:", error);
@@ -67,9 +67,9 @@ app.put("/api/resume", async (req: Request, res: Response) => {
   }
 });
 
-app.delete("/api/resume", async (_req: Request, res: Response) => {
+app.delete("/api/resume", (_req: Request, res: Response) => {
   try {
-    await clearStoredResume(PROJECT_ROOT);
+    clearStoredResume(PROJECT_ROOT);
     return res.status(204).send();
   } catch (error) {
     console.error("Failed to clear stored resume:", error);
@@ -77,9 +77,9 @@ app.delete("/api/resume", async (_req: Request, res: Response) => {
   }
 });
 
-app.get("/api/applicant", async (_req: Request, res: Response) => {
+app.get("/api/applicant", (_req: Request, res: Response) => {
   try {
-    const applicant = await readStoredApplicant(PROJECT_ROOT);
+    const applicant = readStoredApplicant(PROJECT_ROOT);
     return res.json({ applicant });
   } catch (error) {
     console.error("Failed to read applicant info:", error);
@@ -87,7 +87,7 @@ app.get("/api/applicant", async (_req: Request, res: Response) => {
   }
 });
 
-app.put("/api/applicant/extract", async (req: Request, res: Response) => {
+app.put("/api/applicant/extract", (req: Request, res: Response) => {
   try {
     const parsed = ExtractApplicantRequestSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -97,10 +97,7 @@ app.put("/api/applicant/extract", async (req: Request, res: Response) => {
       return res.status(400).json({ error: message });
     }
 
-    const applicant = await extractAndStoreApplicant(
-      PROJECT_ROOT,
-      parsed.data.text
-    );
+    const applicant = extractAndStoreApplicant(PROJECT_ROOT, parsed.data.text);
     return res.json({ applicant });
   } catch (error) {
     console.error("Failed to extract applicant info:", error);
@@ -123,7 +120,9 @@ app.post("/api/generate", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Cover letter generation failed:", error);
     const message =
-      error instanceof Error ? error.message : "Failed to generate cover letter";
+      error instanceof Error
+        ? error.message
+        : "Failed to generate cover letter";
     const status = message.includes("ANTHROPIC_API_KEY") ? 500 : 502;
     return res.status(status).json({ error: message });
   }
