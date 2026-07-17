@@ -1,7 +1,4 @@
-import {
-  EMPTY_APPLICANT,
-  type ApplicantInfo,
-} from "../schemas/applicant.js";
+import { EMPTY_APPLICANT, type ApplicantInfo } from "../schemas/applicant.js";
 import {
   EMAIL_PATTERN,
   LINKEDIN_PATTERN,
@@ -30,7 +27,7 @@ function extractPhone(text: string): string {
 }
 
 function parseLocationFromLine(
-  line: string
+  line: string,
 ): Pick<ApplicantInfo, "city" | "state" | "zip"> | null {
   const fullLineMatch = line.match(LOCATION_PATTERN);
   if (fullLineMatch) {

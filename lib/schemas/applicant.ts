@@ -31,7 +31,7 @@ export function isApplicantComplete(applicant: ApplicantInfo): boolean {
 
 export function mergeApplicantInfo(
   existing: ApplicantInfo,
-  extracted: ApplicantInfo
+  extracted: ApplicantInfo,
 ): ApplicantInfo {
   return {
     fullName: extracted.fullName.trim() || existing.fullName,

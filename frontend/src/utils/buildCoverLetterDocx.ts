@@ -26,7 +26,7 @@ type TextParagraphOptions = {
 
 function textParagraph(
   text: string,
-  options: TextParagraphOptions = {}
+  options: TextParagraphOptions = {},
 ): Paragraph {
   return new Paragraph({
     spacing: { after: options.spacingAfter ?? 0 },
@@ -48,14 +48,14 @@ function bodyParagraph(text: string): Paragraph {
 function pushLines(
   paragraphs: Paragraph[],
   lines: string[],
-  spacingAfterLast = 0
+  spacingAfterLast = 0,
 ): void {
   lines.forEach((text, index) => {
     const isLast = index === lines.length - 1;
     paragraphs.push(
       textParagraph(text, {
         spacingAfter: isLast ? spacingAfterLast : 0,
-      })
+      }),
     );
   });
 }
@@ -69,7 +69,7 @@ export function buildCoverLetterFilename(companyName: string): string {
 }
 
 export async function buildCoverLetterDocx(
-  options: FormatCoverLetterOptions
+  options: FormatCoverLetterOptions,
 ): Promise<Blob> {
   const {
     applicant,
@@ -101,7 +101,9 @@ export async function buildCoverLetterDocx(
   pushLines(paragraphs, headerLines, SECTION_SPACING);
 
   paragraphs.push(
-    textParagraph(formatCoverLetterDate(date), { spacingAfter: SECTION_SPACING })
+    textParagraph(formatCoverLetterDate(date), {
+      spacingAfter: SECTION_SPACING,
+    }),
   );
 
   const recipientLines = [recipient];
@@ -112,7 +114,7 @@ export async function buildCoverLetterDocx(
   pushLines(paragraphs, recipientLines, SECTION_SPACING);
 
   paragraphs.push(
-    textParagraph(`Dear ${recipient},`, { spacingAfter: SECTION_SPACING })
+    textParagraph(`Dear ${recipient},`, { spacingAfter: SECTION_SPACING }),
   );
 
   const bodyParagraphs = sanitizedBody
@@ -124,9 +126,7 @@ export async function buildCoverLetterDocx(
     paragraphs.push(bodyParagraph(paragraph));
   }
 
-  paragraphs.push(
-    textParagraph("Sincerely,", { spacingAfter: 0 })
-  );
+  paragraphs.push(textParagraph("Sincerely,", { spacingAfter: 0 }));
 
   if (applicant.fullName.trim()) {
     paragraphs.push(textParagraph(applicant.fullName.trim()));

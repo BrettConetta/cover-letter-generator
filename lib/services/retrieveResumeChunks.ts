@@ -1,7 +1,7 @@
+import { ResumeChunk } from "../schemas/resumeChunk.js";
+import { cosineSimilarity } from "../utils/cosineSimilarity.js";
 import { embedText } from "./embedText.js";
 import { indexResume } from "./resumeIndexService.js";
-import { cosineSimilarity } from "../utils/cosineSimilarity.js";
-import { ResumeChunk } from "../schemas/resumeChunk.js";
 
 type RetrieveResumeChunksOptions = {
   maxChunks?: number;

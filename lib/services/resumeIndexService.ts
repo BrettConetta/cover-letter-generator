@@ -1,9 +1,9 @@
 import fs from "node:fs";
-import { chunkResume } from "../utils/chunkResume.js";
-import { embedText } from "./embedText.js";
 import { ResumeChunk } from "../schemas/resumeChunk.js";
 import { ResumeIndex, ResumeIndexSchema } from "../schemas/resumeIndex.js";
+import { chunkResume } from "../utils/chunkResume.js";
 import { getResumeIndexPath, readResumeFile } from "../utils/resumeFiles.js";
+import { embedText } from "./embedText.js";
 
 export async function indexResume(projectRoot: string): Promise<ResumeIndex> {
   const resumeText = readResumeFile(projectRoot);

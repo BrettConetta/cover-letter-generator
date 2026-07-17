@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { getResumeFilePath, readResumeFile } from "../utils/resumeFiles.js";
+import { stripContactInfo } from "../utils/stripContactInfo.js";
 import {
   clearStoredApplicant,
   extractAndStoreApplicant,
 } from "./applicantStorageService.js";
-import { stripContactInfo } from "../utils/stripContactInfo.js";
 import { clearResumeIndex } from "./resumeIndexService.js";
-import { getResumeFilePath, readResumeFile } from "../utils/resumeFiles.js";
 
 export function readStoredResume(projectRoot: string): string {
   return readResumeFile(projectRoot);

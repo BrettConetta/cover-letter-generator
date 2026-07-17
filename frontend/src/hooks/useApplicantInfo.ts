@@ -33,7 +33,7 @@ export function useApplicantInfo() {
           setLoadError(
             error instanceof Error
               ? error.message
-              : "Failed to load contact info"
+              : "Failed to load contact info",
           );
         }
       } finally {

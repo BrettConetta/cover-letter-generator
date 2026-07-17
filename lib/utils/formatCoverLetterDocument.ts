@@ -28,7 +28,9 @@ export function formatApplicantLocation(applicant: ApplicantInfo): string {
 }
 
 export function formatApplicantContactLine(applicant: ApplicantInfo): string {
-  const parts = [applicant.email.trim(), applicant.phone.trim()].filter(Boolean);
+  const parts = [applicant.email.trim(), applicant.phone.trim()].filter(
+    Boolean,
+  );
   return parts.join(" | ");
 }
 
