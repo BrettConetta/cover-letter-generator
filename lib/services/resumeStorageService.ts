@@ -1,47 +1,39 @@
-import fs from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
 import {
   clearStoredApplicant,
   extractAndStoreApplicant,
 } from "./applicantStorageService.js";
 import { stripContactInfo } from "../utils/stripContactInfo.js";
+import { clearResumeIndex } from "./resumeIndexService.js";
+import { getResumeFilePath, readResumeFile } from "../utils/resumeFiles.js";
 
-export function getResumeFilePath(projectRoot: string): string {
-  return path.join(projectRoot, "data", "resume.txt");
+export function readStoredResume(projectRoot: string): string {
+  return readResumeFile(projectRoot);
 }
 
-export async function readStoredResume(projectRoot: string): Promise<string> {
-  try {
-    return await fs.readFile(getResumeFilePath(projectRoot), "utf8");
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return "";
-    }
-    throw error;
-  }
-}
-
-export async function writeStoredResume(
+export function writeStoredResume(
   projectRoot: string,
-  rawText: string
-): Promise<string> {
-  await extractAndStoreApplicant(projectRoot, rawText);
+  rawText: string,
+): string {
+  extractAndStoreApplicant(projectRoot, rawText);
   const sanitized = stripContactInfo(rawText);
   const filePath = getResumeFilePath(projectRoot);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, sanitized, "utf8");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, sanitized, "utf8");
+  clearResumeIndex(projectRoot);
   return sanitized;
 }
 
-export async function clearStoredResume(projectRoot: string): Promise<void> {
+export function clearStoredResume(projectRoot: string) {
   try {
-    await fs.unlink(getResumeFilePath(projectRoot));
+    fs.unlinkSync(getResumeFilePath(projectRoot));
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return;
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      throw error;
     }
-    throw error;
   }
 
-  await clearStoredApplicant(projectRoot);
+  clearStoredApplicant(projectRoot);
+  clearResumeIndex(projectRoot);
 }

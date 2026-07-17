@@ -1,4 +1,4 @@
-import fs from "node:fs/promises";
+import fs from "node:fs";
 import path from "node:path";
 import {
   ApplicantInfoSchema,
@@ -12,11 +12,9 @@ export function getApplicantFilePath(projectRoot: string): string {
   return path.join(projectRoot, "data", "applicant.json");
 }
 
-export async function readStoredApplicant(
-  projectRoot: string
-): Promise<ApplicantInfo> {
+export function readStoredApplicant(projectRoot: string): ApplicantInfo {
   try {
-    const raw = await fs.readFile(getApplicantFilePath(projectRoot), "utf8");
+    const raw = fs.readFileSync(getApplicantFilePath(projectRoot), "utf8");
     const parsed = ApplicantInfoSchema.safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : EMPTY_APPLICANT;
   } catch (error) {
@@ -27,30 +25,30 @@ export async function readStoredApplicant(
   }
 }
 
-export async function writeStoredApplicant(
+export function writeStoredApplicant(
   projectRoot: string,
-  applicant: ApplicantInfo
-): Promise<ApplicantInfo> {
+  applicant: ApplicantInfo,
+): ApplicantInfo {
   const validated = ApplicantInfoSchema.parse(applicant);
   const filePath = getApplicantFilePath(projectRoot);
-  await fs.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.writeFile(filePath, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(validated, null, 2)}\n`, "utf8");
   return validated;
 }
 
-export async function extractAndStoreApplicant(
+export function extractAndStoreApplicant(
   projectRoot: string,
-  rawResumeText: string
-): Promise<ApplicantInfo> {
+  rawResumeText: string,
+): ApplicantInfo {
   const extracted = extractContactInfo(rawResumeText);
-  const existing = await readStoredApplicant(projectRoot);
+  const existing = readStoredApplicant(projectRoot);
   const merged = mergeApplicantInfo(existing, extracted);
   return writeStoredApplicant(projectRoot, merged);
 }
 
-export async function clearStoredApplicant(projectRoot: string): Promise<void> {
+export function clearStoredApplicant(projectRoot: string) {
   try {
-    await fs.unlink(getApplicantFilePath(projectRoot));
+    fs.unlinkSync(getApplicantFilePath(projectRoot));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return;
