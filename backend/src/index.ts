@@ -1,19 +1,19 @@
+import dotenv from "dotenv";
+import express, { Request, Response } from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import express, { Request, Response } from "express";
-import dotenv from "dotenv";
 import { z } from "zod";
-import { generateCoverLetter } from "../../lib/services/coverLetterService.js";
 import { GenerateCoverLetterRequestSchema } from "../../lib/schemas/coverLetter.js";
+import {
+  extractAndStoreApplicant,
+  readStoredApplicant,
+} from "../../lib/services/applicantStorageService.js";
+import { generateCoverLetter } from "../../lib/services/coverLetterService.js";
 import {
   clearStoredResume,
   readStoredResume,
   writeStoredResume,
 } from "../../lib/services/resumeStorageService.js";
-import {
-  extractAndStoreApplicant,
-  readStoredApplicant,
-} from "../../lib/services/applicantStorageService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(

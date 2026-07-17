@@ -1,4 +1,3 @@
-import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
 import {
   EMAIL_PATTERN,
   GITHUB_PATTERN,
@@ -7,6 +6,7 @@ import {
   PORTFOLIO_PATTERN,
   URL_PATTERN,
 } from "./contactPatterns.js";
+import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
 import { getResumeHeaderLines } from "./resumeHeader.js";
 
 const SECTION_HEADER_LINE =
@@ -100,6 +100,6 @@ function stripInlineContactInfo(text: string): string {
 
 export function stripContactInfo(text: string): string {
   return normalizeResumeLineBreaks(
-    stripInlineContactInfo(stripResumeHeader(text))
+    stripInlineContactInfo(stripResumeHeader(text)),
   );
 }

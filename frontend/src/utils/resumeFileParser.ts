@@ -1,7 +1,7 @@
 import mammoth from "mammoth";
 import * as pdfjs from "pdfjs-dist";
-import type { TextItem } from "pdfjs-dist/types/src/display/api";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import type { TextItem } from "pdfjs-dist/types/src/display/api";
 import { normalizeResumeLineBreaks } from "../../../lib/utils/normalizeResumeText";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -46,7 +46,10 @@ function groupPdfTextItemsIntoLines(items: unknown[]): string[] {
   let currentY: number | null = null;
 
   for (const item of positioned) {
-    if (currentY === null || Math.abs(item.y - currentY) <= PDF_LINE_Y_TOLERANCE) {
+    if (
+      currentY === null ||
+      Math.abs(item.y - currentY) <= PDF_LINE_Y_TOLERANCE
+    ) {
       currentLine.push(item);
       currentY ??= item.y;
       continue;
@@ -58,7 +61,7 @@ function groupPdfTextItemsIntoLines(items: unknown[]): string[] {
         .map((entry) => entry.str)
         .join(" ")
         .replace(/[ \t]{2,}/g, " ")
-        .trim()
+        .trim(),
     );
     currentLine = [item];
     currentY = item.y;
@@ -71,7 +74,7 @@ function groupPdfTextItemsIntoLines(items: unknown[]): string[] {
         .map((entry) => entry.str)
         .join(" ")
         .replace(/[ \t]{2,}/g, " ")
-        .trim()
+        .trim(),
     );
   }
 
@@ -112,7 +115,7 @@ export async function extractResumeText(file: File): Promise<string> {
   }
 
   throw new Error(
-    "Unsupported file type. Please upload a .txt, .md, .docx, or .pdf file."
+    "Unsupported file type. Please upload a .txt, .md, .docx, or .pdf file.",
   );
 }
 

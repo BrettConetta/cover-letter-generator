@@ -1,4 +1,9 @@
-import { PDFDocument, StandardFonts, type PDFFont, type PDFPage } from "pdf-lib";
+import {
+  PDFDocument,
+  StandardFonts,
+  type PDFFont,
+  type PDFPage,
+} from "pdf-lib";
 import type { FormatCoverLetterOptions } from "../../../lib/utils/formatCoverLetterDocument";
 import {
   formatApplicantContactLine,
@@ -31,7 +36,7 @@ function wrapText(
   text: string,
   font: PDFFont,
   fontSize: number,
-  maxWidth: number
+  maxWidth: number,
 ): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length === 0) {
@@ -109,7 +114,7 @@ class CoverLetterPdfWriter {
 }
 
 export async function buildCoverLetterPdf(
-  options: FormatCoverLetterOptions
+  options: FormatCoverLetterOptions,
 ): Promise<Blob> {
   const {
     applicant,

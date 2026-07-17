@@ -1,5 +1,5 @@
-import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
 import { ResumeChunk } from "../schemas/resumeChunk.js";
+import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
 
 const SECTION_ALIASES: Record<string, string> = {
   summary: "summary",

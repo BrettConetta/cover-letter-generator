@@ -33,7 +33,7 @@ export function useStoredResume() {
           setLoadError(
             error instanceof Error
               ? error.message
-              : "Failed to load saved resume"
+              : "Failed to load saved resume",
           );
         }
       } finally {

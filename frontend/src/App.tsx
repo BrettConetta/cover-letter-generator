@@ -1,7 +1,13 @@
 import { useMemo, useState } from "react";
-import type { CoverLetterResponse } from "../../lib/schemas/coverLetter";
 import { isApplicantComplete } from "../../lib/schemas/applicant";
+import type { CoverLetterResponse } from "../../lib/schemas/coverLetter";
 import { formatCoverLetterDocument } from "../../lib/utils/formatCoverLetterDocument";
+import { generateCoverLetter } from "./api/coverLetter";
+import { CoverLetterResult } from "./components/CoverLetterResult";
+import { JobDescriptionInput } from "./components/JobDescriptionInput";
+import { ResumeInput, type ResumeSource } from "./components/ResumeInput";
+import { useApplicantInfo } from "./hooks/useApplicantInfo";
+import { useStoredResume } from "./hooks/useStoredResume";
 import {
   buildCoverLetterDocx,
   buildCoverLetterFilename,
@@ -12,12 +18,6 @@ import {
   buildCoverLetterPdfFilename,
   downloadCoverLetterPdf,
 } from "./utils/buildCoverLetterPdf";
-import { generateCoverLetter } from "./api/coverLetter";
-import { CoverLetterResult } from "./components/CoverLetterResult";
-import { JobDescriptionInput } from "./components/JobDescriptionInput";
-import { ResumeInput, type ResumeSource } from "./components/ResumeInput";
-import { useApplicantInfo } from "./hooks/useApplicantInfo";
-import { useStoredResume } from "./hooks/useStoredResume";
 import { stripContactInfo } from "./utils/stripContactInfo";
 
 function App() {
@@ -30,7 +30,7 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
-    "idle"
+    "idle",
   );
   const [docxDownloadStatus, setDocxDownloadStatus] = useState<
     "idle" | "downloading" | "error"
@@ -98,7 +98,7 @@ function App() {
           ? "Save a resume under My Resume first, or switch to Paste/Upload."
           : resumeSource === "upload"
             ? "Please upload a resume file."
-            : "Please provide your resume."
+            : "Please provide your resume.",
       );
       return;
     }
@@ -118,7 +118,7 @@ function App() {
         resumeSource === "stored"
           ? storedResume
           : stripContactInfo(
-              resumeSource === "upload" ? uploadedResume : pastedResume
+              resumeSource === "upload" ? uploadedResume : pastedResume,
             );
 
       const result = await generateCoverLetter({
@@ -131,7 +131,7 @@ function App() {
       setError(
         generateError instanceof Error
           ? generateError.message
-          : "Something went wrong."
+          : "Something went wrong.",
       );
     } finally {
       setIsGenerating(false);
@@ -151,7 +151,7 @@ function App() {
       });
       downloadCoverLetterDocx(
         blob,
-        buildCoverLetterFilename(generatedLetter.companyName)
+        buildCoverLetterFilename(generatedLetter.companyName),
       );
       setDocxDownloadStatus("idle");
     } catch {
@@ -172,7 +172,7 @@ function App() {
       });
       downloadCoverLetterPdf(
         blob,
-        buildCoverLetterPdfFilename(generatedLetter.companyName)
+        buildCoverLetterPdfFilename(generatedLetter.companyName),
       );
       setPdfDownloadStatus("idle");
     } catch {

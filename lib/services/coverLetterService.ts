@@ -27,7 +27,7 @@ function getAnthropicClient(): Anthropic {
 }
 
 export async function generateCoverLetter(
-  input: GenerateCoverLetterInput
+  input: GenerateCoverLetterInput,
 ): Promise<CoverLetterResponse> {
   const client = getAnthropicClient();
   const userPrompt = buildCoverLetterUserPrompt(input);
@@ -60,7 +60,9 @@ export async function generateCoverLetter(
     } catch (error) {
       console.error(`Cover letter parse failed (attempt ${attempt}):`, rawText);
       if (attempt === 1) {
-        throw new Error("Claude returned invalid cover letter JSON after retry");
+        throw new Error(
+          "Claude returned invalid cover letter JSON after retry",
+        );
       }
       messages = [
         { role: "user", content: userPrompt },
