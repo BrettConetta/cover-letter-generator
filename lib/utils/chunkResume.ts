@@ -54,7 +54,7 @@ export function chunkResumeIntoSections(resume: string): ResumeChunk[] {
     if (sectionHeader === null) return;
     sections.push({
       id: sectionHeader,
-      section: sectionHeader,
+      section: sectionHeader as ResumeChunk["section"],
       text: sectionText.join("\n"),
     });
     sectionText = [];

@@ -1,4 +1,4 @@
-import type { GenerateCoverLetterInput } from "./types.js";
+import type { GenerateCoverLetterInput } from "../types.js";
 
 export function buildCoverLetterUserPrompt(
   input: GenerateCoverLetterInput,
