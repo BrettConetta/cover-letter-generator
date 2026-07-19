@@ -1,29 +1,29 @@
-import Anthropic from "@anthropic-ai/sdk";
+import type { Anthropic } from "@anthropic-ai/sdk";
 import {
-  COVER_LETTER_JSON_RETRY_PROMPT,
-  COVER_LETTER_SYSTEM_PROMPT,
-  buildCoverLetterUserPrompt,
-  type GenerateCoverLetterInput,
+  buildTailorResumeUserPrompt,
+  TAILOR_RESUME_JSON_RETRY_PROMPT,
+  TAILOR_RESUME_SYSTEM_PROMPT,
 } from "../prompts/index.js";
 import {
-  CoverLetterResponseSchema,
-  type CoverLetterResponse,
-} from "../schemas/coverLetter.js";
+  TailoredResumeResponseSchema,
+  type TailoredResumeResponse,
+} from "../schemas/tailoredResumeResponse.js";
 import { getAnthropicClient } from "../utils/anthropicClient.js";
 import { parseClaudeResponse } from "../utils/parseAnthropicResponse.js";
+import { retrieveResumeChunks } from "./retrieveResumeChunks.js";
 
-export type { GenerateCoverLetterInput };
-
-export async function generateCoverLetter(
-  input: GenerateCoverLetterInput,
-): Promise<CoverLetterResponse> {
+export async function tailorResume(
+  projectRoot: string,
+  jobDescription: string,
+): Promise<TailoredResumeResponse> {
   const client = getAnthropicClient();
-  const userPrompt = buildCoverLetterUserPrompt(input);
+  const chunks = await retrieveResumeChunks(projectRoot, jobDescription);
+  const userPrompt = buildTailorResumeUserPrompt({ jobDescription, chunks });
 
   const baseRequest = {
     model: process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-6",
-    max_tokens: 2048,
-    system: COVER_LETTER_SYSTEM_PROMPT,
+    max_tokens: 4096,
+    system: TAILOR_RESUME_SYSTEM_PROMPT,
   } as const;
 
   let messages: Anthropic.MessageParam[] = [
@@ -44,18 +44,21 @@ export async function generateCoverLetter(
     const rawText = textBlock.text;
 
     try {
-      return parseClaudeResponse(rawText, CoverLetterResponseSchema);
+      return parseClaudeResponse(rawText, TailoredResumeResponseSchema);
     } catch (error) {
-      console.error(`Cover letter parse failed (attempt ${attempt}):`, rawText);
+      console.error(
+        `Tailored resume parse failed (attempt ${attempt}):`,
+        rawText,
+      );
       if (attempt === 1) {
         throw new Error(
-          "Claude returned invalid cover letter JSON after retry",
+          "Claude returned invalid tailored resume JSON after retry",
         );
       }
       messages = [
         { role: "user", content: userPrompt },
         { role: "assistant", content: rawText },
-        { role: "user", content: COVER_LETTER_JSON_RETRY_PROMPT },
+        { role: "user", content: TAILOR_RESUME_JSON_RETRY_PROMPT },
       ];
     }
   }
