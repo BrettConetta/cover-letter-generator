@@ -1,7 +1,7 @@
 import { ResumeChunk } from "../schemas/resumeChunk.js";
+import { ResumeIndex } from "../schemas/resumeIndex.js";
 import { cosineSimilarity } from "../utils/cosineSimilarity.js";
 import { embedText } from "./embedText.js";
-import { indexResume } from "./resumeIndexService.js";
 
 type RetrieveResumeChunksOptions = {
   maxChunks?: number;
@@ -11,8 +11,8 @@ type RetrieveResumeChunksOptions = {
 };
 
 export async function retrieveResumeChunks(
-  projectRoot: string,
   jobDescriptionText: string,
+  resumeIndex: ResumeIndex,
   options: RetrieveResumeChunksOptions = {},
 ): Promise<ResumeChunk[]> {
   const {
@@ -33,8 +33,7 @@ export async function retrieveResumeChunks(
     selectedIds.add(chunk.id);
   }
 
-  // index the resume and embed the job description
-  const resumeIndex = await indexResume(projectRoot);
+  // embed the job description
   const jobDescriptionEmbedding = await embedText(jobDescriptionText);
 
   // calculate the similarity scores for each chunk and sort them by similarity
@@ -48,6 +47,7 @@ export async function retrieveResumeChunks(
   }
   similarityScores.sort((a, b) => b.similarity - a.similarity);
 
+  // add chunks that should always be included (skills, summary, latest experience)
   for (const section of ensureSections) {
     const match = similarityScores.find((s) => s.chunk.section === section);
     if (match) {
@@ -60,6 +60,8 @@ export async function retrieveResumeChunks(
       tryAdd(latest.chunk);
     }
   }
+
+  // add chunks that are similar to the job description
   for (const score of similarityScores) {
     if (selected.length >= maxChunks) break;
     if (score.similarity < minScore) continue;
