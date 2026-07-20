@@ -4,20 +4,21 @@ import {
   TAILOR_RESUME_JSON_RETRY_PROMPT,
   TAILOR_RESUME_SYSTEM_PROMPT,
 } from "../prompts/index.js";
+import { ResumeIndex } from "../schemas/resumeIndex.js";
 import {
   TailoredResumeResponseSchema,
   type TailoredResumeResponse,
-} from "../schemas/tailoredResumeResponse.js";
+} from "../schemas/tailoredResume.js";
 import { getAnthropicClient } from "../utils/anthropicClient.js";
 import { parseClaudeResponse } from "../utils/parseAnthropicResponse.js";
 import { retrieveResumeChunks } from "./retrieveResumeChunks.js";
 
 export async function tailorResume(
-  projectRoot: string,
   jobDescription: string,
+  resumeIndex: ResumeIndex,
 ): Promise<TailoredResumeResponse> {
   const client = getAnthropicClient();
-  const chunks = await retrieveResumeChunks(projectRoot, jobDescription);
+  const chunks = await retrieveResumeChunks(jobDescription, resumeIndex);
   const userPrompt = buildTailorResumeUserPrompt({ jobDescription, chunks });
 
   const baseRequest = {
@@ -31,6 +32,7 @@ export async function tailorResume(
   ];
 
   for (let attempt = 0; attempt < 2; attempt++) {
+    console.log("wainting for response from anthropic, attempt:", attempt);
     const response = await client.messages.create({
       ...baseRequest,
       messages,

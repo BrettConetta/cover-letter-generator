@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { ResumeChunkSchema } from "./resumeChunk.js";
 
+export const TailoredResumeRequestSchema = z.object({
+  jobDescription: z.string().trim().min(1, "jobDescription is required"),
+  resumeText: z.string().trim().optional(),
+});
+
+export type TailoredResumeRequest = z.infer<typeof TailoredResumeRequestSchema>;
+
 export const TailoredResumeSuggestionSchema = z.object({
   chunkId: z.string().trim().min(1, "chunkId is required"), // must match a retrieved chunk id
   section: ResumeChunkSchema.shape.section,

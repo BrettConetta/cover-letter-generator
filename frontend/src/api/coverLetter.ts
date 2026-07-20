@@ -9,9 +9,9 @@ export type GenerateCoverLetterPayload = {
 };
 
 export async function generateCoverLetter(
-  payload: GenerateCoverLetterPayload
+  payload: GenerateCoverLetterPayload,
 ): Promise<CoverLetterResponse> {
-  const response = await fetch("/api/generate", {
+  const response = await fetch("/api/cover-letter/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),

@@ -1,4 +1,4 @@
-import type { TailorResumeInput } from "../index.js";
+import type { TailorResumeInput } from "../types.js";
 
 export function buildTailorResumeUserPrompt(input: TailorResumeInput): string {
   const { jobDescription, chunks } = input;
