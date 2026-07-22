@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   extractResumeText,
   isSupportedResumeFile,
   SUPPORTED_RESUME_FORMATS,
-} from "../utils/resumeFileParser";
-import { stripContactInfo } from "../utils/stripContactInfo";
+} from "../utils/resumeFileParser.js";
+import { stripContactInfo } from "../utils/stripContactInfo.js";
 
 export type ResumeSource = "paste" | "upload" | "stored";
 
@@ -20,6 +20,7 @@ type ResumeInputProps = {
   onSaveStoredResume: (text: string) => Promise<string>;
   onClearStoredResume: () => Promise<void>;
   disabled?: boolean;
+  rows?: number;
 };
 
 export function ResumeInput({
@@ -34,12 +35,19 @@ export function ResumeInput({
   onSaveStoredResume,
   onClearStoredResume,
   disabled = false,
+  rows = 18,
 }: ResumeInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tabListRef = useRef<HTMLDivElement>(null);
+  const [tabIndicator, setTabIndicator] = useState({ left: 0, width: 0 });
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [uploadSaveMessage, setUploadSaveMessage] = useState<string | null>(null);
+  const [uploadSaveMessage, setUploadSaveMessage] = useState<string | null>(
+    null,
+  );
   const [isUploadSaving, setIsUploadSaving] = useState(false);
+  const [pasteSaveMessage, setPasteSaveMessage] = useState<string | null>(null);
+  const [isPasteSaving, setIsPasteSaving] = useState(false);
   const [storedDraft, setStoredDraft] = useState(storedResume);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -53,6 +61,39 @@ export function ResumeInput({
   useEffect(() => {
     setIsEditExpanded(!hasStoredResume);
   }, [hasStoredResume]);
+
+  useEffect(() => {
+    if (source === "stored" && !hasStoredResume) {
+      onSourceChange("paste");
+    }
+  }, [source, hasStoredResume, onSourceChange]);
+
+  useLayoutEffect(() => {
+    const tabList = tabListRef.current;
+    if (!tabList) return;
+
+    function updateIndicator() {
+      const list = tabListRef.current;
+      if (!list) return;
+
+      const activeTab = list.querySelector<HTMLElement>(
+        `[data-resume-tab="${source}"]`,
+      );
+      if (!activeTab) return;
+
+      setTabIndicator({
+        left: activeTab.offsetLeft,
+        width: activeTab.offsetWidth,
+      });
+    }
+
+    updateIndicator();
+
+    const observer = new ResizeObserver(updateIndicator);
+    observer.observe(tabList);
+
+    return () => observer.disconnect();
+  }, [source, hasStoredResume, disabled]);
 
   async function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -73,7 +114,7 @@ export function ResumeInput({
       onSourceChange("upload");
     } catch (error) {
       setUploadError(
-        error instanceof Error ? error.message : "Failed to read resume file"
+        error instanceof Error ? error.message : "Failed to read resume file",
       );
     } finally {
       event.target.value = "";
@@ -92,14 +133,37 @@ export function ResumeInput({
     try {
       await onSaveStoredResume(uploadedResume);
       setUploadSaveMessage(
-        "Saved to data/resume.txt. Contact information was removed."
+        "Saved to data/resume.txt. Contact information was removed.",
       );
     } catch (error) {
       setUploadSaveMessage(
-        error instanceof Error ? error.message : "Failed to save resume."
+        error instanceof Error ? error.message : "Failed to save resume.",
       );
     } finally {
       setIsUploadSaving(false);
+    }
+  }
+
+  async function handleSavePastedResume() {
+    if (!pastedResume.trim()) {
+      setPasteSaveMessage("Paste a resume before saving.");
+      return;
+    }
+
+    setIsPasteSaving(true);
+    setPasteSaveMessage(null);
+
+    try {
+      await onSaveStoredResume(pastedResume);
+      setPasteSaveMessage(
+        "Saved to data/resume.txt. Contact information was removed.",
+      );
+    } catch (error) {
+      setPasteSaveMessage(
+        error instanceof Error ? error.message : "Failed to save resume.",
+      );
+    } finally {
+      setIsPasteSaving(false);
     }
   }
 
@@ -116,10 +180,12 @@ export function ResumeInput({
       const sanitized = await onSaveStoredResume(storedDraft);
       setStoredDraft(sanitized);
       setIsEditExpanded(false);
-      setSaveMessage("Saved to data/resume.txt. Contact information was removed.");
+      setSaveMessage(
+        "Saved to data/resume.txt. Contact information was removed.",
+      );
     } catch (error) {
       setSaveMessage(
-        error instanceof Error ? error.message : "Failed to save resume."
+        error instanceof Error ? error.message : "Failed to save resume.",
       );
     } finally {
       setIsSaving(false);
@@ -136,7 +202,9 @@ export function ResumeInput({
       setSaveMessage("Saved resume cleared.");
     } catch (error) {
       setSaveMessage(
-        error instanceof Error ? error.message : "Failed to clear saved resume."
+        error instanceof Error
+          ? error.message
+          : "Failed to clear saved resume.",
       );
     } finally {
       setIsClearing(false);
@@ -146,42 +214,103 @@ export function ResumeInput({
   const tabs: { id: ResumeSource; label: string }[] = [
     { id: "paste", label: "Paste" },
     { id: "upload", label: "Upload" },
-    { id: "stored", label: "My Resume" },
+    { id: "stored", label: "Saved Resume" },
   ];
 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-sm font-medium text-gray-900">Resume</h2>
-        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => onSourceChange(tab.id)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                source === tab.id
-                  ? "bg-white text-indigo-700 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div
+          ref={tabListRef}
+          className="relative inline-flex rounded-lg border border-gray-200 bg-gray-50 p-1"
+        >
+          <span
+            aria-hidden
+            className="pointer-events-none absolute top-1 bottom-1 left-0 rounded-md bg-white shadow-sm transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+            style={{
+              width: tabIndicator.width,
+              transform: `translateX(${tabIndicator.left}px)`,
+            }}
+          />
+          {tabs.map((tab) => {
+            const storedLocked = tab.id === "stored" && !hasStoredResume;
+            const tabDisabled = disabled || storedLocked;
+            const isActive = source === tab.id;
+
+            const button = (
+              <button
+                type="button"
+                data-resume-tab={tab.id}
+                disabled={tabDisabled}
+                onClick={() => onSourceChange(tab.id)}
+                className={`relative z-10 rounded-md px-3 py-1.5 text-xs font-medium transition-[color,background-color] duration-200 ease-out disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-600 ${
+                  storedLocked ? "pointer-events-none" : ""
+                } ${
+                  isActive
+                    ? "text-indigo-700"
+                    : "cursor-pointer text-gray-600 hover:bg-gray-200/70 hover:text-gray-900"
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+
+            return storedLocked ? (
+              <span
+                key={tab.id}
+                title="Save a resume first to use My Resume"
+                className="inline-flex"
+              >
+                {button}
+              </span>
+            ) : (
+              <span key={tab.id} className="inline-flex">
+                {button}
+              </span>
+            );
+          })}
         </div>
       </div>
 
       {source === "paste" && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <textarea
             value={pastedResume}
-            onChange={(event) => onPastedResumeChange(event.target.value)}
+            onChange={(event) => {
+              onPastedResumeChange(event.target.value);
+              setPasteSaveMessage(null);
+            }}
             disabled={disabled}
-            rows={12}
+            rows={rows}
             placeholder="Paste your resume text here..."
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
+            className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
           />
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={disabled || isPasteSaving || !pastedResume.trim()}
+              onClick={() => void handleSavePastedResume()}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {isPasteSaving ? "Saving..." : "Save as master resume"}
+            </button>
+          </div>
+
+          {pasteSaveMessage && (
+            <p
+              className={`text-sm ${
+                pasteSaveMessage.startsWith("Failed") ||
+                pasteSaveMessage.startsWith("Paste a resume")
+                  ? "text-red-600"
+                  : "text-gray-600"
+              }`}
+              role="status"
+            >
+              {pasteSaveMessage}
+            </p>
+          )}
         </div>
       )}
 
@@ -257,8 +386,7 @@ export function ResumeInput({
           {hasStoredResume ? (
             <div className="space-y-2">
               <p className="text-xs text-gray-500">
-                Using your saved resume from data/resume.txt (contact info
-                removed).
+                Using your saved resume (contact info has been removed).
               </p>
               <pre className="max-h-64 overflow-auto rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs whitespace-pre-wrap text-gray-700">
                 {storedResume}
@@ -304,7 +432,7 @@ export function ResumeInput({
                 disabled={disabled}
                 rows={10}
                 placeholder="Paste your resume here to save it to data/resume.txt. Contact details will be removed when you save."
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
+                className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
               />
 
               <div className="flex flex-wrap items-center gap-3">
@@ -324,7 +452,7 @@ export function ResumeInput({
                       const sanitized = stripContactInfo(storedDraft);
                       setStoredDraft(sanitized);
                       setSaveMessage(
-                        "Preview updated with contact info removed."
+                        "Preview updated with contact info removed.",
                       );
                     }}
                     className="rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"

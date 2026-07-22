@@ -1,4 +1,4 @@
-import { ResumeChunk } from "../schemas/resumeChunk.js";
+import type { ResumeChunk } from "../schemas/resumeChunk.js";
 import { normalizeResumeLineBreaks } from "./normalizeResumeText.js";
 
 const SECTION_ALIASES: Record<string, string> = {
