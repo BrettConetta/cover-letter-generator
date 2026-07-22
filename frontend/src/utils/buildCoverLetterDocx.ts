@@ -5,13 +5,13 @@ import {
   TextRun,
   convertInchesToTwip,
 } from "docx";
-import type { FormatCoverLetterOptions } from "../../../lib/utils/formatCoverLetterDocument";
+import type { FormatCoverLetterOptions } from "../../../lib/utils/formatCoverLetterDocument.js";
 import {
   formatApplicantContactLine,
   formatApplicantLocation,
   formatCoverLetterDate,
   sanitizeCoverLetterBody,
-} from "../../../lib/utils/formatCoverLetterDocument";
+} from "../../../lib/utils/formatCoverLetterDocument.js";
 
 const FONT = "Calibri";
 const BODY_FONT_SIZE = 22; // 11pt in half-points

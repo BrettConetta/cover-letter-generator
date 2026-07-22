@@ -4,13 +4,13 @@ import {
   type PDFFont,
   type PDFPage,
 } from "pdf-lib";
-import type { FormatCoverLetterOptions } from "../../../lib/utils/formatCoverLetterDocument";
+import type { FormatCoverLetterOptions } from "../../../lib/utils/formatCoverLetterDocument.js";
 import {
   formatApplicantContactLine,
   formatApplicantLocation,
   formatCoverLetterDate,
   sanitizeCoverLetterBody,
-} from "../../../lib/utils/formatCoverLetterDocument";
+} from "../../../lib/utils/formatCoverLetterDocument.js";
 
 const PAGE_WIDTH = 612; // 8.5in
 const PAGE_HEIGHT = 792; // 11in
