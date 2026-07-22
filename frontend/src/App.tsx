@@ -1,43 +1,18 @@
-import { useMemo, useState } from "react";
-import { isApplicantComplete } from "../../lib/schemas/applicant";
-import type { CoverLetterResponse } from "../../lib/schemas/coverLetter";
-import { formatCoverLetterDocument } from "../../lib/utils/formatCoverLetterDocument";
-import { generateCoverLetter } from "./api/coverLetter";
-import { CoverLetterResult } from "./components/CoverLetterResult";
-import { JobDescriptionInput } from "./components/JobDescriptionInput";
-import { ResumeInput, type ResumeSource } from "./components/ResumeInput";
-import { useApplicantInfo } from "./hooks/useApplicantInfo";
-import { useStoredResume } from "./hooks/useStoredResume";
-import {
-  buildCoverLetterDocx,
-  buildCoverLetterFilename,
-  downloadCoverLetterDocx,
-} from "./utils/buildCoverLetterDocx";
-import {
-  buildCoverLetterPdf,
-  buildCoverLetterPdfFilename,
-  downloadCoverLetterPdf,
-} from "./utils/buildCoverLetterPdf";
-import { stripContactInfo } from "./utils/stripContactInfo";
+import { useState } from "react";
+import { CoverLetterPanel } from "./components/CoverLetterPanel.js";
+import type { ResumeSource } from "./components/ResumeInput.js";
+import { ResumeTailorPanel } from "./components/ResumeTailorPanel.js";
+import { useApplicantInfo } from "./hooks/useApplicantInfo.js";
+import { useStoredResume } from "./hooks/useStoredResume.js";
+
+type AppTab = "resume-tailor" | "cover-letter";
 
 function App() {
+  const [activeTab, setActiveTab] = useState<AppTab>("resume-tailor");
   const [jobDescription, setJobDescription] = useState("");
   const [resumeSource, setResumeSource] = useState<ResumeSource>("paste");
   const [pastedResume, setPastedResume] = useState("");
   const [uploadedResume, setUploadedResume] = useState("");
-  const [generatedLetter, setGeneratedLetter] =
-    useState<CoverLetterResponse | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [copyStatus, setCopyStatus] = useState<"idle" | "copied" | "error">(
-    "idle",
-  );
-  const [docxDownloadStatus, setDocxDownloadStatus] = useState<
-    "idle" | "downloading" | "error"
-  >("idle");
-  const [pdfDownloadStatus, setPdfDownloadStatus] = useState<
-    "idle" | "downloading" | "error"
-  >("idle");
 
   const {
     storedResume,
@@ -55,142 +30,6 @@ function App() {
     refreshApplicant,
     syncApplicantFromResume,
   } = useApplicantInfo();
-
-  const activeResumeText = useMemo(() => {
-    if (resumeSource === "stored") {
-      return storedResume;
-    }
-    if (resumeSource === "upload") {
-      return uploadedResume;
-    }
-    return pastedResume;
-  }, [resumeSource, storedResume, uploadedResume, pastedResume]);
-
-  const formattedCoverLetter = useMemo(() => {
-    if (!generatedLetter) {
-      return null;
-    }
-
-    return formatCoverLetterDocument({
-      applicant,
-      body: generatedLetter.coverLetter,
-      companyName: generatedLetter.companyName,
-    });
-  }, [applicant, generatedLetter]);
-
-  const hasCompleteApplicant = isApplicantComplete(applicant);
-
-  async function handleGenerate() {
-    setError(null);
-    setGeneratedLetter(null);
-    setCopyStatus("idle");
-    setDocxDownloadStatus("idle");
-    setPdfDownloadStatus("idle");
-
-    if (!jobDescription.trim()) {
-      setError("Please paste a job description.");
-      return;
-    }
-
-    if (!activeResumeText.trim()) {
-      setError(
-        resumeSource === "stored"
-          ? "Save a resume under My Resume first, or switch to Paste/Upload."
-          : resumeSource === "upload"
-            ? "Please upload a resume file."
-            : "Please provide your resume.",
-      );
-      return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      if (resumeSource === "paste") {
-        await syncApplicantFromResume(pastedResume);
-      } else if (resumeSource === "upload") {
-        await syncApplicantFromResume(uploadedResume);
-      } else {
-        await refreshApplicant();
-      }
-
-      const resumeText =
-        resumeSource === "stored"
-          ? storedResume
-          : stripContactInfo(
-              resumeSource === "upload" ? uploadedResume : pastedResume,
-            );
-
-      const result = await generateCoverLetter({
-        jobDescription: jobDescription.trim(),
-        resumeText,
-      });
-
-      setGeneratedLetter(result);
-    } catch (generateError) {
-      setError(
-        generateError instanceof Error
-          ? generateError.message
-          : "Something went wrong.",
-      );
-    } finally {
-      setIsGenerating(false);
-    }
-  }
-
-  async function handleDownloadDocx() {
-    if (!generatedLetter) return;
-
-    setDocxDownloadStatus("downloading");
-
-    try {
-      const blob = await buildCoverLetterDocx({
-        applicant,
-        body: generatedLetter.coverLetter,
-        companyName: generatedLetter.companyName,
-      });
-      downloadCoverLetterDocx(
-        blob,
-        buildCoverLetterFilename(generatedLetter.companyName),
-      );
-      setDocxDownloadStatus("idle");
-    } catch {
-      setDocxDownloadStatus("error");
-    }
-  }
-
-  async function handleDownloadPdf() {
-    if (!generatedLetter) return;
-
-    setPdfDownloadStatus("downloading");
-
-    try {
-      const blob = await buildCoverLetterPdf({
-        applicant,
-        body: generatedLetter.coverLetter,
-        companyName: generatedLetter.companyName,
-      });
-      downloadCoverLetterPdf(
-        blob,
-        buildCoverLetterPdfFilename(generatedLetter.companyName),
-      );
-      setPdfDownloadStatus("idle");
-    } catch {
-      setPdfDownloadStatus("error");
-    }
-  }
-
-  async function handleCopy() {
-    if (!formattedCoverLetter) return;
-
-    try {
-      await navigator.clipboard.writeText(formattedCoverLetter);
-      setCopyStatus("copied");
-      window.setTimeout(() => setCopyStatus("idle"), 2000);
-    } catch {
-      setCopyStatus("error");
-    }
-  }
 
   async function handleResumeSaved(rawText: string) {
     const sanitized = await saveResume(rawText);
@@ -211,91 +50,106 @@ function App() {
     );
   }
 
+  const sharedInputProps = {
+    jobDescription,
+    onJobDescriptionChange: setJobDescription,
+    resumeSource,
+    onResumeSourceChange: setResumeSource,
+    pastedResume,
+    onPastedResumeChange: setPastedResume,
+    uploadedResume,
+    onUploadedResumeChange: setUploadedResume,
+    storedResume,
+    hasStoredResume,
+    onSaveStoredResume: handleResumeSaved,
+    onClearStoredResume: handleResumeCleared,
+    resumeLoadError,
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+        <div
+          className={`mx-auto px-4 py-6 sm:px-6 ${
+            activeTab === "resume-tailor" ? "max-w-7xl" : "max-w-6xl"
+          }`}
+        >
           <h1 className="text-2xl font-bold text-gray-900">
-            Cover Letter Generator
+            Job Application Assistant
           </h1>
           <p className="mt-1 text-sm text-gray-600">
-            Paste a job description and your resume to generate a tailored cover
-            letter.
+            Generate cover letters and tailor your resume for each role.
           </p>
+
+          <div
+            className="mt-5 flex gap-1 border-b border-gray-200"
+            role="tablist"
+            aria-label="Application tools"
+          >
+            <TabButton
+              id="resume-tailor"
+              label="Resume Tailor"
+              active={activeTab === "resume-tailor"}
+              onSelect={setActiveTab}
+            />
+            <TabButton
+              id="cover-letter"
+              label="Cover Letter"
+              active={activeTab === "cover-letter"}
+              onSelect={setActiveTab}
+            />
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="space-y-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            <JobDescriptionInput
-              value={jobDescription}
-              onChange={setJobDescription}
-              disabled={isGenerating}
-            />
-
-            <ResumeInput
-              source={resumeSource}
-              onSourceChange={setResumeSource}
-              pastedResume={pastedResume}
-              onPastedResumeChange={setPastedResume}
-              uploadedResume={uploadedResume}
-              onUploadedResumeChange={setUploadedResume}
-              storedResume={storedResume}
-              hasStoredResume={hasStoredResume}
-              onSaveStoredResume={handleResumeSaved}
-              onClearStoredResume={handleResumeCleared}
-              disabled={isGenerating}
-            />
-
-            {(resumeLoadError || applicantLoadError) && (
-              <p className="text-sm text-red-600" role="alert">
-                {resumeLoadError ?? applicantLoadError}
-              </p>
-            )}
-
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isGenerating ? "Generating..." : "Generate cover letter"}
-              </button>
-
-              {error && (
-                <p className="text-sm text-red-600" role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-            {formattedCoverLetter ? (
-              <CoverLetterResult
-                coverLetter={formattedCoverLetter}
-                onCopy={handleCopy}
-                copyStatus={copyStatus}
-                onDownloadDocx={handleDownloadDocx}
-                docxDownloadStatus={docxDownloadStatus}
-                onDownloadPdf={handleDownloadPdf}
-                pdfDownloadStatus={pdfDownloadStatus}
-                hasCompleteApplicant={hasCompleteApplicant}
-              />
-            ) : (
-              <div className="flex h-full min-h-80 items-center justify-center text-center">
-                <p className="max-w-sm text-sm text-gray-500">
-                  Your generated cover letter will appear here. Add a job
-                  description and resume, then click Generate.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+      <main
+        className={`mx-auto px-4 py-8 sm:px-6 ${
+          activeTab === "resume-tailor" ? "max-w-7xl" : "max-w-6xl"
+        }`}
+      >
+        {activeTab === "cover-letter" ? (
+          <CoverLetterPanel
+            {...sharedInputProps}
+            applicantLoadError={applicantLoadError}
+            applicant={applicant}
+            refreshApplicant={refreshApplicant}
+            syncApplicantFromResume={syncApplicantFromResume}
+          />
+        ) : (
+          <ResumeTailorPanel {...sharedInputProps} />
+        )}
       </main>
     </div>
+  );
+}
+
+function TabButton({
+  id,
+  label,
+  active,
+  onSelect,
+}: {
+  id: AppTab;
+  label: string;
+  active: boolean;
+  onSelect: (tab: AppTab) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      id={`tab-${id}`}
+      aria-selected={active}
+      aria-controls={`panel-${id}`}
+      onClick={() => onSelect(id)}
+      className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+        active
+          ? "border-indigo-600 text-indigo-700"
+          : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 

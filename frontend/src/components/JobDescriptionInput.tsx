@@ -2,12 +2,14 @@ type JobDescriptionInputProps = {
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
+  rows?: number;
 };
 
 export function JobDescriptionInput({
   value,
   onChange,
   disabled = false,
+  rows = 18,
 }: JobDescriptionInputProps) {
   return (
     <section className="space-y-2">
@@ -19,9 +21,9 @@ export function JobDescriptionInput({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         disabled={disabled}
-        rows={12}
+        rows={rows}
         placeholder="Paste the full job description here..."
-        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
+        className="w-full resize-y rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:bg-gray-100"
       />
     </section>
   );

@@ -17,6 +17,10 @@ export const TailoredResumeSuggestionSchema = z.object({
   rationale: z.string().trim().min(1, "rationale is required"), // short: why this change for this JD
 });
 
+export type TailoredResumeSuggestion = z.infer<
+  typeof TailoredResumeSuggestionSchema
+>;
+
 export const TailoredResumeResponseSchema = z.object({
   companyName: z.string(), // optional nicety, like cover letters
   roleTitle: z.string(), // inferred from JD; empty if unclear
