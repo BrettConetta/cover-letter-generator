@@ -1,4 +1,4 @@
-import { ResumeChunk } from "../schemas/resumeChunk";
+import { ResumeChunk } from "../schemas/resumeChunk.js";
 
 export type GenerateCoverLetterInput = {
   jobDescription: string;

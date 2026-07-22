@@ -1,11 +1,11 @@
 import {
   ApplicantInfoSchema,
   type ApplicantInfo,
-} from "../../../lib/schemas/applicant";
+} from "../../../lib/schemas/applicant.js";
 
 async function parseErrorMessage(
   response: Response,
-  fallback: string
+  fallback: string,
 ): Promise<string> {
   const text = await response.text();
 
@@ -26,11 +26,7 @@ async function parseErrorMessage(
 }
 
 function parseApplicantResponse(body: unknown): ApplicantInfo {
-  if (
-    typeof body === "object" &&
-    body !== null &&
-    "applicant" in body
-  ) {
+  if (typeof body === "object" && body !== null && "applicant" in body) {
     const parsed = ApplicantInfoSchema.safeParse(body.applicant);
     if (parsed.success) {
       return parsed.data;
@@ -45,7 +41,7 @@ export async function fetchStoredApplicant(): Promise<ApplicantInfo> {
 
   if (!response.ok) {
     throw new Error(
-      await parseErrorMessage(response, "Failed to load contact info")
+      await parseErrorMessage(response, "Failed to load contact info"),
     );
   }
 
@@ -53,7 +49,7 @@ export async function fetchStoredApplicant(): Promise<ApplicantInfo> {
 }
 
 export async function extractApplicantFromResume(
-  text: string
+  text: string,
 ): Promise<ApplicantInfo> {
   const response = await fetch("/api/applicant/extract", {
     method: "PUT",
@@ -63,7 +59,7 @@ export async function extractApplicantFromResume(
 
   if (!response.ok) {
     throw new Error(
-      await parseErrorMessage(response, "Failed to extract contact info")
+      await parseErrorMessage(response, "Failed to extract contact info"),
     );
   }
 

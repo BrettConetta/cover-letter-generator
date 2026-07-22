@@ -3,7 +3,7 @@ import {
   clearStoredResume,
   fetchStoredResume,
   saveStoredResume as persistStoredResume,
-} from "../api/resume";
+} from "../api/resume.js";
 
 const LEGACY_STORAGE_KEY = "cover-letter-generator:stored-resume";
 

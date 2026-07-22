@@ -2,7 +2,7 @@ import mammoth from "mammoth";
 import * as pdfjs from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
-import { normalizeResumeLineBreaks } from "../../../lib/utils/normalizeResumeText";
+import { normalizeResumeLineBreaks } from "../../../lib/utils/normalizeResumeText.js";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 

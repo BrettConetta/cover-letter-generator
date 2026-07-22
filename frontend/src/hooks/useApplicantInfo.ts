@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   EMPTY_APPLICANT,
   type ApplicantInfo,
-} from "../../../lib/schemas/applicant";
+} from "../../../lib/schemas/applicant.js";
 import {
   extractApplicantFromResume,
   fetchStoredApplicant,
-} from "../api/applicant";
+} from "../api/applicant.js";
 
 export function useApplicantInfo() {
   const [applicant, setApplicant] = useState<ApplicantInfo>(EMPTY_APPLICANT);

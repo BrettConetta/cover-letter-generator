@@ -1,7 +1,7 @@
 import {
   CoverLetterResponseSchema,
   type CoverLetterResponse,
-} from "../../../lib/schemas/coverLetter";
+} from "../../../lib/schemas/coverLetter.js";
 
 export type GenerateCoverLetterPayload = {
   jobDescription: string;

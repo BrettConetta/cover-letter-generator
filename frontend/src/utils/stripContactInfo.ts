@@ -1,1 +1,1 @@
-export { stripContactInfo } from "../../../lib/utils/stripContactInfo";
+export { stripContactInfo } from "../../../lib/utils/stripContactInfo.js";
