@@ -139,7 +139,7 @@ Treat the saved resume as a **master resume**: a complete inventory of roles, pr
 Pipeline:
 
 1. **Resolve resume text** — use `resumeText` from the request, or fall back to `data/resume.txt`.
-2. **Chunk** — split into sections and role/project entries (e.g. `summary`, `skills`, `experience-0`).
+2. **Chunk** — split into sections and entries (e.g. `summary`, `skills`, `experience-0`). Experience is one chunk per role (company/location are included on each role, including later titles at the same employer). Projects are split per project entry.
 3. **Embed / index** — embed chunks with Ollama.
    - Saved master resume: cache embeddings in `data/resumeIndex.json` (rebuild when chunk content changes).
    - One-off `resumeText` in the request: build an in-memory index only (does not overwrite the saved index).
