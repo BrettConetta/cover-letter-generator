@@ -11,6 +11,7 @@ import {
 } from "../schemas/tailoredResume.js";
 import { getAnthropicClient } from "../utils/anthropicClient.js";
 import { parseClaudeResponse } from "../utils/parseAnthropicResponse.js";
+import { parseExperienceChunk } from "../utils/parseExperienceChunk.js";
 import { retrieveResumeChunks } from "./retrieveResumeChunks.js";
 
 export async function tailorResume(
@@ -46,7 +47,26 @@ export async function tailorResume(
     const rawText = textBlock.text;
 
     try {
-      return parseClaudeResponse(rawText, TailoredResumeResponseSchema);
+      const tailoredResume = parseClaudeResponse(
+        rawText,
+        TailoredResumeResponseSchema,
+      );
+
+      // add experience context to each suggestion (company, location, title, dates)
+      tailoredResume.suggestions.forEach((suggestion) => {
+        if (suggestion.section === "experience") {
+          const relevantChunk = chunks.find(
+            (chunk) => chunk.id === suggestion.chunkId,
+          );
+          if (relevantChunk) {
+            suggestion.experienceContext = parseExperienceChunk(
+              relevantChunk.text,
+            );
+          }
+        }
+      });
+
+      return tailoredResume;
     } catch (error) {
       console.error(
         `Tailored resume parse failed (attempt ${attempt}):`,

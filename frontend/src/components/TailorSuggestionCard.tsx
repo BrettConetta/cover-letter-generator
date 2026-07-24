@@ -40,29 +40,37 @@ export function TailorSuggestionCard({
 
   return (
     <article className="space-y-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-gray-900">
-              {formatSection(suggestion.section)}
-            </span>
-            <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${ACTION_STYLES[suggestion.action]}`}
-            >
-              {suggestion.action}
-            </span>
-          </div>
-          <p className="text-sm text-gray-600">{suggestion.rationale}</p>
+      <div className="min-w-0 space-y-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-gray-900">
+            {formatSection(suggestion.section)}
+          </span>
+          <span
+            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${ACTION_STYLES[suggestion.action]}`}
+          >
+            {suggestion.action}
+          </span>
         </div>
-
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
-        >
-          {copyStatus === "copied" ? "Copied!" : "Copy suggested"}
-        </button>
+        {suggestion.experienceContext && (
+          <>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-base font-semibold text-gray-900">
+                {suggestion.experienceContext.title}
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-sm font-medium text-gray-700">
+                {suggestion.experienceContext.company} •{" "}
+                {suggestion.experienceContext.location}
+              </span>
+              <span className="text-xs text-gray-500">
+                {suggestion.experienceContext.dates}
+              </span>
+            </div>
+          </>
+        )}
       </div>
+      <p className="text-sm text-gray-600">{suggestion.rationale}</p>
 
       {copyStatus === "error" && (
         <p className="text-sm text-red-600" role="alert">
@@ -98,6 +106,15 @@ export function TailorSuggestionCard({
               : suggestion.suggestedText}
           </div>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-end gap-3">
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className="shrink-0 rounded-lg border border-indigo-200 bg-white px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+        >
+          {copyStatus === "copied" ? "Copied!" : "Copy suggested"}
+        </button>
       </div>
     </article>
   );

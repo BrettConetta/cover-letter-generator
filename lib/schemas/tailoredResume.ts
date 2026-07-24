@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { ResumeChunkSchema } from "./resumeChunk.js";
 
+export const ExperienceContextSchema = z.object({
+  company: z.string().trim(),
+  location: z.string().trim(),
+  title: z.string().trim(),
+  dates: z.string().trim(),
+});
+export type ExperienceContext = z.infer<typeof ExperienceContextSchema>;
+
 export const TailoredResumeRequestSchema = z.object({
   jobDescription: z.string().trim().min(1, "jobDescription is required"),
   resumeText: z.string().trim().optional(),
@@ -15,6 +23,7 @@ export const TailoredResumeSuggestionSchema = z.object({
   originalText: z.string().trim().min(1, "originalText is required"), // echo of chunk text (or subset)
   suggestedText: z.string().trim().min(1, "suggestedText is required"), // tailored version; same as original if keep
   rationale: z.string().trim().min(1, "rationale is required"), // short: why this change for this JD
+  experienceContext: ExperienceContextSchema.optional(),
 });
 
 export type TailoredResumeSuggestion = z.infer<
