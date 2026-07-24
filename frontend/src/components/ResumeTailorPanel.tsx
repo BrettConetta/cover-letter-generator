@@ -146,8 +146,7 @@ export function ResumeTailorPanel({
 
         {isTailoring && (
           <p className="text-center text-sm text-gray-600" role="status">
-            Indexing and tailoring can take longer than cover letters — usually
-            under a minute.
+            Indexing and tailoring can take some time, usually under a minute.
           </p>
         )}
 
